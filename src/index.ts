@@ -8,7 +8,7 @@
 export declare interface options {
     key?: string;
     paths?: string[];
-    filter?: (type?: string) => boolean;
+    filter?: (storeName?: string, type?: string) => boolean;
     storage?: Storage;
 }
 
@@ -25,7 +25,7 @@ export default ({
         /**
          * use globally if store'name existed.
          */
-        if (store.name) {
+        if (store.willUseGlobalPlugin && store.name) {
             key = store.name;
         }
         const canWriteStorage = (): boolean => {
@@ -77,22 +77,30 @@ export default ({
         }
 
         if (canWriteStorage()) {
+            /**
+             * init store and storage data sync.
+             */
             if (hasStorageCache()) {
                 syncStore(getState());
             } else {
-                setState(store.state());
+                if (
+                    typeof filter === "function" &&
+                    filter(store.name)
+                ) {
+                    setState(store.state());
+                }
             }
 
             store.$subscribe("mutation", ({ type }) => {
                 /**
                  * must config the key one more time!
                  */
-                if (store.name) {
+                if (store.willUseGlobalPlugin && store.name) {
                     key = store.name;
                 }
                 if (
                     typeof filter === "function" &&
-                    filter(type)
+                    filter(store.name, type)
                 ) {
                     setState(store.state());
                 }
